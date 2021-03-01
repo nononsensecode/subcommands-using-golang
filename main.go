@@ -6,42 +6,67 @@ import (
 	"os"
 )
 
-type Command struct {
-	flagSet *flag.FlagSet
+// SubCommand describes name of the subcommand as well as the function to execute it
+type SubCommand struct {
+	FlagSet *flag.FlagSet
+	Execute func(f *flag.FlagSet, args []string, vars ...interface{})
 }
 
-func (c Command) Execute(f func()) {
-	f()
+//Name returns the name of the subcommand
+func (c SubCommand) Name() string {
+	return c.FlagSet.Name()
 }
 
-func (c Command) Name() string {
-	return c.flagSet.Name()
-}
-
+const cFirstName = "firstname"
+const cLastName = "lastname"
+const cMobile = "mobile"
+const cEmail = "email"
 
 func main() {
 
-	subCommands := []Command{
-		Command{flag.NewFlagSet("name", flag.ContinueOnError)},
-		Command{flag.NewFlagSet("contact", flag.ContinueOnError)},
+	name := SubCommand{
+		FlagSet: flag.NewFlagSet("name", flag.ContinueOnError),
+		Execute: func(f *flag.FlagSet, args []string, vars ...interface{}) {
+			f.Parse(args)
+
+			if cap(vars) < 2 {
+				panic("Invalid number of arguments")
+			}
+
+			fmt.Printf("Name: %s %s\n", *vars[0].(*string), *vars[1].(*string))
+		},
 	}
 
-	
-	firstname := subCommands[0].flagSet.String("firstname", "unknown", "first name of the user")
-	lastname := subCommands[0].flagSet.String("lastname", "unknown", "last name of the user")
+	contact := SubCommand{
+		FlagSet: flag.NewFlagSet("contact", flag.ContinueOnError),
+		Execute: func(f *flag.FlagSet, args []string, vars ...interface{}) {
+			f.Parse(args)
 
-	mobile := subCommands[1].flagSet.String("mobile", "", "mobile number of the user")
-	email := subCommands[1].flagSet.String("email", "", "email id of the user")
+			if cap(vars) < 2 {
+				panic("Invalid number of arguments")
+			}
+
+			fmt.Printf("Mobile: %s, Email: %s\n", *vars[0].(*string), *vars[1].(*string))
+		},
+	}
+
+	firstname := name.FlagSet.String("firstname", "unknown", "first name of the user")
+	lastname := name.FlagSet.String("lastname", "unknown", "last name of the user")
+
+	mobile := contact.FlagSet.String("mobile", "", "mobile number of the user")
+	email := contact.FlagSet.String("email", "", "email id of the user")
 
 	// Get the subcommand which is the 1st argument
-	subcommand := os.Args[1]
-
-	for _, cmd := range subcommands {
-		if cmd.Name() == subcommand {
-			cmd.Parse(os.Args[2:])
-		}
+	if cap(os.Args) < 2 {
+		os.Exit(0)
 	}
-	
-	fmt.Printf("Name: %s %s\n", *firstname, *lastname)
-	fmt.Printf("Mobile: %s, Email: %s\n", *mobile, *email)
+
+	subCommand := os.Args[1]
+
+	switch subCommand {
+	case name.Name():
+		name.Execute(name.FlagSet, os.Args[2:], firstname, lastname)
+	case contact.Name():
+		contact.Execute(contact.FlagSet, os.Args[2:], mobile, email)
+	}
 }
