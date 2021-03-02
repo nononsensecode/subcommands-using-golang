@@ -5,25 +5,19 @@ import (
 	"fmt"
 )
 
-var name string
-
-type gender bool
+type gender string
 
 func (g *gender) String() string {
-	if *g {
-		return "Mr."
-	}
-
-	return "Ms."
+	return string(*g)
 }
 
 func (g *gender) Set(s string) error {
 	switch s {
 	case "m":
-		*g = true
+		*g = "Mr."
 		return nil
 	case "f":
-		*g = false
+		*g = "Ms."
 		return nil
 	default:
 		panic("Invalid gender")
@@ -33,11 +27,13 @@ func (g *gender) Set(s string) error {
 func main() {
 	name := flag.String("name", "unknown", "Name of the user")
 
-	var isMale = gender(true)
+	var isMale = gender("Mr")
+
 
 	flag.Var(&isMale, "gender", "Gender of the user")
+	flag.Var(&isMale, "g", "Gender of the")
 
 	flag.Parse()
 
-	fmt.Printf("Name: %s %s\n", prefix, *name)
+	fmt.Printf("Name: %s %s\n", isMale.String(), *name)
 }
